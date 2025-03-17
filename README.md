@@ -1,0 +1,1 @@
+# session-dsm-grpc-plugin-gamelift-go
