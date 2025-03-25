@@ -99,15 +99,38 @@ func (s *SessionDSM) CreateGameSession(
 		return nil, errors.New("need provide requested region")
 	}
 
+	// Store some additional data in session properties. You may add additional values here as needed
+	// These can be read and used by the dedicated server that ends up hosting this session
+	clientVersionKey := "clientVersion"
+	gameModeKey := "gameMode"
+	sessionSecretKey := "sessionSecret"
+	gameProperties := []types.GameProperty{
+		{
+			Key:   &clientVersionKey,
+			Value: &req.ClientVersion,
+		},
+		{
+			Key:   &gameModeKey,
+			Value: &req.GameMode,
+		},
+		{
+			Key:   &sessionSecretKey,
+			Value: &req.Secret,
+		},
+	}
+
+	// Try to create a session in each region, and break when a session is created successfully
 	for _, region := range req.RequestedRegion {
 		maxPlayersI32 := int32(req.MaximumPlayer)
 		createGameSessionInput := &gamelift.CreateGameSessionInput{
-			AliasId:                   &req.Deployment,
+			AliasId:                   &req.Deployment, // Deployment must be either a fully-qualified GameLift Alias ARN or a short Alias ID
 			IdempotencyToken:          &req.SessionId,
 			MaximumPlayerSessionCount: &maxPlayersI32,
 			Location:                  &region,
+			GameProperties:            gameProperties,
 		}
 
+		// Only provide session data if it's not empty
 		if req.SessionData != "" {
 			createGameSessionInput.GameSessionData = &req.SessionData
 		}
@@ -118,6 +141,7 @@ func (s *SessionDSM) CreateGameSession(
 			continue
 		}
 
+		// Session placement succeeded on this region, so we can exit
 		break
 	}
 
@@ -134,10 +158,10 @@ func (s *SessionDSM) CreateGameSession(
 		GameMode:      req.GameMode,
 		Source:        constants.GameServerSourceGamelift,
 		Status:        constants.ServerStatusReady,
-		Deployment:    *gameliftResponse.GameSession.GameSessionId,
+		Deployment:    *gameliftResponse.GameSession.GameSessionId, // Set the `Deployment` field to the fully qualified Game Session ARN so that we can terminate the session later
 		Ip:            *gameliftResponse.GameSession.IpAddress,
 		Port:          int64(*gameliftResponse.GameSession.Port),
-		ServerId:      *gameliftResponse.GameSession.GameSessionId,
+		ServerId:      *gameliftResponse.GameSession.GameSessionId, // Set the `ServerId` field to the fully qualified Game Session ARN. This must match what the server provides when connecting to the AccelByte DS Hub
 		Region:        *gameliftResponse.GameSession.Location,
 		CreatedRegion: *gameliftResponse.GameSession.Location,
 	}
@@ -155,6 +179,8 @@ func (s *SessionDSM) TerminateGameSession(
 
 	log := scope.Log
 
+	// We need the fully qualified AWS Game Session ARN to make the terminate call, which is not provided in `req`
+	// We query the full session info from AccelByte here to retrieve the ARN in the `deployment` field
 	sessionInfo, err := s.SessionClient.GetGameSessionShort(&game_session.GetGameSessionParams{
 		Namespace: req.Namespace,
 		SessionID: req.SessionId,
@@ -166,8 +192,8 @@ func (s *SessionDSM) TerminateGameSession(
 	serverInfo := sessionInfo.DSInformation.Server
 
 	terminateSessionRequest := &gamelift.TerminateGameSessionInput{
-		GameSessionId:   &serverInfo.Deployment,
-		TerminationMode: types.TerminationModeTriggerOnProcessTerminate,
+		GameSessionId:   &serverInfo.Deployment,                         // Deployment must be a fully-qualified GameLift Game Session ARN
+		TerminationMode: types.TerminationModeTriggerOnProcessTerminate, // Trigger a normal, graceful shutdown
 	}
 
 	_, err = s.GameLiftClient.TerminateGameSession(ctx, terminateSessionRequest)
@@ -200,6 +226,22 @@ func (s *SessionDSM) CreateGameSessionAsync(
 		req.Deployment = s.AwsQueueArnOverride
 	}
 
+	// GameLift Queues support latency-based matchmaking
+	// If player latencies are provided in SessionData, we try to parse them here
+	// If latency is not supplied, the queue will prioritize based on the location order defined on queue creation
+
+	// This function expects session data to take the following form:
+	// {
+	//   ... // other session data
+	//
+	//   "player_latencies": [
+	//      "player_id_1": {
+	//        "us-west-2": 42.5,
+	//        "us-east-2": 88.23,
+	//      },
+	//      ... // other player latency maps
+	//   ]
+	// }
 	playerLatencies, err := extractLatencies(req.SessionData)
 	if err != nil {
 		log.WithError(err).Warnf("failed to parse player QoS data, continuing with session placement for session id %s", req.SessionId)
@@ -209,11 +251,12 @@ func (s *SessionDSM) CreateGameSessionAsync(
 
 	maxPlayersI32 := int32(req.MaximumPlayer)
 	createSessionPlacementRequest := &gamelift.StartGameSessionPlacementInput{
-		GameSessionQueueName:      &req.Deployment,
+		GameSessionQueueName:      &req.Deployment, // Deployment must be a fully qualified GameLift Queue ARN
 		MaximumPlayerSessionCount: &maxPlayersI32,
 		PlacementId:               &req.SessionId,
 	}
 
+	// If we have player latencies, add them to the request here
 	if playerLatencies != nil {
 		createSessionPlacementRequest.PlayerLatencies = playerLatencies
 	}
@@ -232,6 +275,10 @@ func (s *SessionDSM) CreateGameSessionAsync(
 	}
 
 	log.Infof("Successfully started Game Session Placement: %v", startPlacementResponse)
+
+	// The game session placement will be fulfilled asynchronously after this function returns
+	// Developers must call UpdateDSInformation to inform AccelByte that the placement has completed
+	// See https://docs.aws.amazon.com/gamelift/latest/developerguide/queue-notification.html
 
 	response.Success = true
 	return &response, nil
