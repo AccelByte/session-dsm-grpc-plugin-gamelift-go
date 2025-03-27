@@ -251,7 +251,7 @@ func (s *SessionDSM) CreateGameSessionAsync(
 
 	maxPlayersI32 := int32(req.MaximumPlayer)
 	createSessionPlacementRequest := &gamelift.StartGameSessionPlacementInput{
-		GameSessionQueueName:      &req.Deployment, // Deployment must be a fully qualified GameLift Queue ARN
+		GameSessionQueueName:      &req.Deployment, // Deployment may be a fully qualified GameLift Queue ARN, or just the queue name
 		MaximumPlayerSessionCount: &maxPlayersI32,
 		PlacementId:               &req.SessionId,
 	}
