@@ -88,7 +88,7 @@ A helper script using the `extend-helper-cli` is located in the Session DSM repo
 
 ## Additional Resources
 
-This repository is based on the standard AccelByte Session DSM template available here: [AccelByte/session-dsm-grpc-plugin-go](https://github.com/AccelByte/session-dsm-grpc-plugin-go)
+This repository is based on the standard AccelByte Session DSM template: [AccelByte/session-dsm-grpc-plugin-go](https://github.com/AccelByte/session-dsm-grpc-plugin-go)
 
 For more information about the Extend system and the Session DSM extension, refer to the following resources:
 
