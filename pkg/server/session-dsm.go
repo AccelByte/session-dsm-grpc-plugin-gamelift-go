@@ -19,6 +19,7 @@ import (
 	"github.com/AccelByte/accelbyte-go-sdk/session-sdk/pkg/sessionclientmodels"
 	"github.com/aws/aws-sdk-go-v2/service/gamelift"
 	"github.com/aws/aws-sdk-go-v2/service/gamelift/types"
+	"github.com/sirupsen/logrus"
 )
 
 type AccelByteSessionClient interface {
@@ -79,7 +80,14 @@ func (s *SessionDSM) CreateGameSession(
 	scope := envelope.NewRootScope(ctx, "CreateGameSession", "")
 	defer scope.Finish()
 
-	log := scope.Log
+	log := scope.Log.WithFields(logrus.Fields{
+		"session_id":       req.SessionId,
+		"namespace":        req.Namespace,
+		"deployment":       req.Deployment,
+		"requested_region": req.RequestedRegion,
+		"client_version":   req.ClientVersion,
+		"game_mode":        req.GameMode,
+	})
 
 	var gameliftResponse *gamelift.CreateGameSessionOutput
 	var err error
@@ -177,7 +185,10 @@ func (s *SessionDSM) TerminateGameSession(
 	scope := envelope.NewRootScope(ctx, "TerminateGameSession", "")
 	defer scope.Finish()
 
-	log := scope.Log
+	log := scope.Log.WithFields(logrus.Fields{
+		"session_id": req.SessionId,
+		"namespace":  req.Namespace,
+	})
 
 	// We need the fully qualified AWS Game Session ARN to make the terminate call, which is not provided in `req`
 	// We query the full session info from AccelByte here to retrieve the ARN in the `deployment` field
@@ -190,6 +201,15 @@ func (s *SessionDSM) TerminateGameSession(
 		return nil, err
 	}
 	serverInfo := sessionInfo.DSInformation.Server
+
+	log = log.WithFields(logrus.Fields{
+		"server_deployment":   serverInfo.Deployment,
+		"server_region":       serverInfo.Region,
+		"server_game_version": serverInfo.GameVersion,
+		"server_source":       serverInfo.Source,
+		"server_provider":     serverInfo.Provider,
+		"server_status":       serverInfo.Status,
+	})
 
 	terminateSessionRequest := &gamelift.TerminateGameSessionInput{
 		GameSessionId:   &serverInfo.Deployment,                         // Deployment must be a fully-qualified GameLift Game Session ARN
@@ -219,7 +239,13 @@ func (s *SessionDSM) CreateGameSessionAsync(
 	scope := envelope.NewRootScope(ctx, "CreateGameSessionAsync", "")
 	defer scope.Finish()
 
-	log := scope.Log
+	log := scope.Log.WithFields(logrus.Fields{
+		"session_id":       req.SessionId,
+		"namespace":        req.Namespace,
+		"deployment":       req.Deployment,
+		"requested_region": req.RequestedRegion,
+		"client_version":   req.ClientVersion,
+	})
 
 	if s.AwsQueueArnOverride != "" {
 		log.Debugf("Using AWS Queue ARN override: %v", s.AwsQueueArnOverride)
