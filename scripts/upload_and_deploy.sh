@@ -1,12 +1,11 @@
 #!/bin/bash
 
 # These variables must be exported for `extend-helper-cli` to work
-export AB_BASE_URL="YOUR_BASE_URL_HERE"
+export AB_BASE_URL="<organization>-<namespace>.prod.gamingservices.accelbyte.io"
 export AB_CLIENT_ID="YOUR_CLIENT_ID_HERE"
 export AB_CLIENT_SECRET="YOUR_CLIENT_SECRET_HERE"
-export REPO_URL="YOUR_REPO_URL_HERE"
 
-AB_NAMESPACE="YOUR_ACCELBYTE_NAMESPACE_HERE"
+AB_NAMESPACE="<organization>-<namespace>"
 AB_EXTEND_APP_NAME="bytewars-session-dsm"
 AB_EXTEND_APP_IMAGE_TAG="0.0.0"
 
