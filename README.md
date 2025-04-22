@@ -90,7 +90,8 @@ Several environment variables are required when running the Session DSM. The fol
     - e.g. `us-west-2`
 - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: Amazon IAM credentials used by the Session DSM to manage Amazon GameLift sessions
     - If you are coming from the QUICKSTART guide, these can be retrieved from Terraform
-- `AWS_LOCATION_OVERRIDE`: 
+- `AWS_LOCATION_OVERRIDE`:
+    - Only required when running the Session DSM in **synchronous mode**. This specifies the region that contains the Alias defined in `AWS_ALIAS_ID_OVERRIDE`
     - When using Amazon GameLift Servers Anywhere, this value should match the custom location of your Anywhere fleet, e.g. `custom-location-1`
 	- Otherwise, this should be the home region for your Amazon GameLift resources, e.g. `us-west-2`
 - `AWS_ALIAS_ID_OVERRIDE`: When using the Session DSM in **synchronous mode**, this value determines the fleet alias to use when creating a fleet using the AWS SDK `CreateGameSession` function
