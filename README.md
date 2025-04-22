@@ -1,18 +1,18 @@
-# Session DSM Extend Override for GameLift Servers
+# Session DSM Extend Override for Amazon GameLift Servers
 
-**AccelByte Gaming Services** (AGS) features can be customized using **Extend** services, which are backend gRPC servers that can be written by developers to customize AGS functionality. The **Session DSM Extend Override** is a service used to request servers to back AccelByte Game Sessions. Developers can customize the Session DSM to support other hosting providers including, GameLift Servers.
+**AccelByte Gaming Services** (AGS) features can be customized using **Extend** services, which are backend gRPC servers that can be written by developers to customize AGS functionality. The **Session DSM Extend Override** is a service used to request servers to back AccelByte Game Sessions. Developers can customize the Session DSM to support other hosting providers including, Amazon GameLift Servers.
 
 ## Overview
 
-The Session DSM has three overridable functions: `CreateGameSession`, `CreateGameSessionAsync`, and `TerminateGameSession`. In this project, these functions are implemented to manage servers through GameLift Servers using [the official AWS SDK for Go v2](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2).
+The Session DSM has three overridable functions: `CreateGameSession`, `CreateGameSessionAsync`, and `TerminateGameSession`. In this project, these functions are implemented to manage servers through Amazon GameLift Servers using [the official AWS SDK for Go v2](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2).
 
-- `CreateGameSession` creates a GameLift Game Session using the AWS SDK function `CreateGameSession` and immediately returns server connection details on success. This is the default behavior of the Session DSM, and is useful for testing or for games that may not require the power and flexibility of GameLift Queues
-- `CreateGameSessionAsync` starts a GameLift session queue placement using the AWS SDK function `StartGameSessionPlacement`. This is used when running the Session DSM in **asynchronous mode**, and is used to leverage GameLift Queues.
-- `TerminateGameSession` will terminate an existing GameLift Game Session using the AWS SDK function `TerminateGameSession`. This is used for sessions that are created by both `CreateGameSession` and `CreateGameSessionAsync`.
+- `CreateGameSession` creates a Amazon GameLift Game Session using the AWS SDK function `CreateGameSession` and immediately returns server connection details on success. This is the default behavior of the Session DSM, and is useful for testing or for games that may not require the power and flexibility of Amazon GameLift Queues
+- `CreateGameSessionAsync` starts a Amazon GameLift session queue placement using the AWS SDK function `StartGameSessionPlacement`. This is used when running the Session DSM in **asynchronous mode**, and is used to leverage Amazon GameLift Queues.
+- `TerminateGameSession` will terminate an existing Amazon GameLift Game Session using the AWS SDK function `TerminateGameSession`. This is used for sessions that are created by both `CreateGameSession` and `CreateGameSessionAsync`.
 
 ### Synchronous vs Asynchronous Mode
 
-There are two distinct methods that can be used to request servers from GameLift Servers, referred to as **synchronous mode** and **asynchronous mode**. This toggle is handled in the Session DSM, and can be set for specific AccelByte Session Templates as needed.
+There are two distinct methods that can be used to request servers from Amazon GameLift Servers, referred to as **synchronous mode** and **asynchronous mode**. This toggle is handled in the Session DSM, and can be set for specific AccelByte Session Templates as needed.
 
 **Synchronous mode** is simpler to implement, and is best used for early testing and development workflows. This method also gives developers explicit control over what fleets are used when a session is created.
 
@@ -33,7 +33,7 @@ sequenceDiagram
 	
 	AGS ->> +Session DSM: CreateGameSession (Extend Override gRPC)
 
-	Session DSM ->> +GameLift: CreateGameSession (GameLift SDK)
+	Session DSM ->> +GameLift: CreateGameSession (Amazon GameLift Servers SDK)
 	GameLift ->> -Session DSM: Server connection info
 
 	GameLift ->> Dedicated Server: OnStartGameSession
@@ -43,7 +43,7 @@ sequenceDiagram
 	Note over AGS: Server connection info for <br> the match is sent to client
 ```
 
-**Asynchronous mode** allows developers to utilize GameLift Server Queues for session placement, which allows placing sessions to optimize by latency, cost, and location. Using Queues offers an easy and efficient way to process high volumes of session placement requests across multiple regions. This mode is recommended for production workloads.
+**Asynchronous mode** allows developers to utilize Amazon GameLift Server Queues for session placement, which allows placing sessions to optimize by latency, cost, and location. Using Queues offers an easy and efficient way to process high volumes of session placement requests across multiple regions. This mode is recommended for production workloads.
 
 When using asynchronous mode and a session placement succeeds, the flow is similar to the synchronous flow, but the dedicated server makes the call to AccelByte through UpdateDSInformation to provide connection details and update the server status to "AVAILABLE".
 
@@ -62,7 +62,7 @@ sequenceDiagram
 	
 	AGS ->> +Session DSM: CreateGameSessionAsync (Extend Override gRPC)
 
-	Session DSM ->> +GameLift: StartGameSessionPlacement (GameLift SDK)
+	Session DSM ->> +GameLift: StartGameSessionPlacement (Amazon GameLift Servers SDK)
 
 	GameLift ->> -Session DSM: OK
 	
