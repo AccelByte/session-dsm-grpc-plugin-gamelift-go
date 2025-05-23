@@ -131,7 +131,9 @@ The following instructions assume that you are using Ngrok. You may refer to [ng
 
 ## Additional Resources
 
-This repository is based on the standard AccelByte Session DSM template: [AccelByte/session-dsm-grpc-plugin-go](https://github.com/AccelByte/session-dsm-grpc-plugin-go)
+This repository is based on the standard AccelByte Session DSM template: [AccelByte/session-dsm-grpc-plugin-go](https://github.com/AccelByte/session-dsm-grpc-plugin-go).
+
+The IaC (Infrastructure as Code) repo to help you deploy AWS components needed to integrate with production-ready GameLift async queue system is here: [AccelByte/session-dsm-gamelift-iac](https://github.com/AccelByte/session-dsm-gamelift-iac).
 
 For more information about the Extend system and the Session DSM extension, refer to the following resources:
 
