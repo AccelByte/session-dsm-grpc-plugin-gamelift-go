@@ -77,7 +77,7 @@ func (s *SessionDSM) CreateGameSession(
 	ctx context.Context,
 	req *sessiondsm.RequestCreateGameSession,
 ) (*sessiondsm.ResponseCreateGameSession, error) {
-	scope := envelope.NewRootScope(ctx, "CreateGameSession", "")
+	scope := envelope.NewRootScope(ctx, "CreateGameSession")
 	defer scope.Finish()
 
 	log := scope.Log.WithFields(logrus.Fields{
@@ -182,7 +182,7 @@ func (s *SessionDSM) TerminateGameSession(
 	ctx context.Context,
 	req *sessiondsm.RequestTerminateGameSession,
 ) (*sessiondsm.ResponseTerminateGameSession, error) {
-	scope := envelope.NewRootScope(ctx, "TerminateGameSession", "")
+	scope := envelope.NewRootScope(ctx, "TerminateGameSession")
 	defer scope.Finish()
 
 	log := scope.Log.WithFields(logrus.Fields{
@@ -236,7 +236,7 @@ func (s *SessionDSM) CreateGameSessionAsync(
 	ctx context.Context,
 	req *sessiondsm.RequestCreateGameSession,
 ) (*sessiondsm.ResponseCreateGameSessionAsync, error) {
-	scope := envelope.NewRootScope(ctx, "CreateGameSessionAsync", "")
+	scope := envelope.NewRootScope(ctx, "CreateGameSessionAsync")
 	defer scope.Finish()
 
 	log := scope.Log.WithFields(logrus.Fields{

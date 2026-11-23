@@ -8,7 +8,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/AccelByte/go-restful-plugins/v3/pkg/trace"
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel"
@@ -20,7 +19,6 @@ import (
 )
 
 const (
-	abTraceIdLogField       = "abTraceID"
 	serviceName             = "justice-session-service"
 	gitHashField            = "gitHash"
 	versionField            = "serviceVersion"
@@ -29,45 +27,35 @@ const (
 
 // Scope used as the envelope to combine and transport request-related information by the chain of function calls.
 type Scope struct {
-	Ctx     context.Context //nolint:containedctx
-	TraceID string
-	span    oteltrace.Span
-	Log     *logrus.Entry
+	Ctx  context.Context //nolint:containedctx
+	span oteltrace.Span
+	Log  *logrus.Entry
 }
 
-func ChildScopeFromRemoteScope(ctx context.Context, name string, traceID string) *Scope {
+func ChildScopeFromRemoteScope(ctx context.Context, name string) *Scope {
 	tracer := otel.Tracer(serviceName)
 	tracerCtx, span := tracer.Start(ctx, name)
 
 	return &Scope{
-		Ctx:     tracerCtx,
-		TraceID: traceID,
-		span:    span,
-		Log: logrus.WithField(abTraceIdLogField, traceID).
-			WithField(versionField, constants.VERSION).
+		Ctx:  tracerCtx,
+		span: span,
+		Log: logrus.WithField(versionField, constants.VERSION).
 			WithField(gitHashField, constants.GIT_HASH).
 			WithField(roleSeedingVersionField, constants.ROLE_SEEDING_VERSION),
 	}
 }
 
-func NewRootScope(rootCtx context.Context, name string, abTraceID string) *Scope {
+func NewRootScope(rootCtx context.Context, name string) *Scope {
 	tracer := otel.Tracer(serviceName)
 	ctx, span := tracer.Start(rootCtx, name)
-	scope := &Scope{
-		Ctx:     ctx,
-		TraceID: abTraceID,
-		span:    span,
-		Log: logrus.WithField(abTraceIdLogField, abTraceID).
-			WithField(versionField, constants.VERSION).
+
+	return &Scope{
+		Ctx:  ctx,
+		span: span,
+		Log: logrus.WithField(versionField, constants.VERSION).
 			WithField(gitHashField, constants.GIT_HASH).
 			WithField(roleSeedingVersionField, constants.ROLE_SEEDING_VERSION),
 	}
-
-	if abTraceID != "" {
-		scope.TraceTag(trace.TraceIDKey, abTraceID)
-	}
-
-	return scope
 }
 
 // Finish finishes current scope.
@@ -103,10 +91,9 @@ func (s *Scope) NewChildScope(name string) *Scope {
 	ctx, span := tracer.Start(s.Ctx, name)
 
 	return &Scope{
-		Ctx:     ctx,
-		TraceID: s.TraceID,
-		span:    span,
-		Log:     s.Log,
+		Ctx:  ctx,
+		span: span,
+		Log:  s.Log,
 	}
 }
 
@@ -117,10 +104,9 @@ func (s *Scope) NewChildScopeWithTimeout(name string, timeout time.Duration) *Sc
 	ctx, span := tracer.Start(ctx, name)
 
 	return &Scope{
-		Ctx:     ctx,
-		TraceID: s.TraceID,
-		span:    span,
-		Log:     s.Log,
+		Ctx:  ctx,
+		span: span,
+		Log:  s.Log,
 	}
 }
 
@@ -166,5 +152,5 @@ func (s *Scope) TraceEvent(eventMessage string) {
 
 // SetLogger allows for setting a different logger than the default std logger. This is mostly useful for testing.
 func (s *Scope) SetLogger(logger *logrus.Logger) {
-	s.Log = logger.WithField(abTraceIdLogField, s.TraceID)
+	s.Log = logrus.NewEntry(logger)
 }
